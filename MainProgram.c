@@ -19,13 +19,13 @@ int main(void) {
 	while(1) {		
         //set to start										
 		*(timerPTR + 1) = 0b0100;
+        //get data from potent function call
+        int currentRead = getData();
+
         //timer countdown
 		while(*(timerPTR) != 0b01) { }
 
         //main program code
-        //get data from potent function call
-        int currentRead = getData();
-
         //above threshold - green or 3rd LED
         if(currentRead > fillThreshold){
             //trigger LED
