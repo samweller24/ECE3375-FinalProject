@@ -20,7 +20,7 @@ int main(void) {
         //set to start										
 		*(timerPTR + 1) = 0b0100;
         //get data from potent function call
-        int currentRead = getData();
+        int currentRead = getData(); // get readout from potentiometer
 
         //timer countdown
 		while(*(timerPTR) != 0b01) { }
