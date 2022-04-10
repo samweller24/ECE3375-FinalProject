@@ -26,12 +26,12 @@ int t_hex = 0x0F;
  * @brief Wifi Message Structure
  * 
  */
-struct WifiMessage {
+typedef struct s_data {
     int clientId;
     int unitId;
     int reading;
     int timestamp;
-};
+} WifiMessage;
 
 /**
  * @brief Displays array of 6 characters (hex-encoded) on the LCD displays
@@ -127,7 +127,7 @@ void pushDigitsToArray(char arr[], char num[], int offset) {
     }
 }
 
-const char* buildCharArray(struct WifiMessage msg) {
+const char* buildCharArray(WifiMessage msg) {
     int clientIdLength = numPlaces(msg.clientId);
     int unitIdLength = numPlaces(msg.unitId);
     int readingLength = numPlaces(msg.reading);

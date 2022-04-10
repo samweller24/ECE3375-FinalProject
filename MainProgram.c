@@ -22,6 +22,16 @@ int main(void) {
         //get data from potent function call
         int currentRead = getData(); // get readout from potentiometer
 
+        // Build wifi message
+        WifiMessage message;
+        message.clientId = 0;
+        message.unitId = 0;
+        message.reading = currentRead;
+        message.timestamp = 0;
+
+        // Send (display) wifi message
+        displayScrollingMsg(buildCharArray(message));
+
         //timer countdown
 		while(*(timerPTR) != 0b01) { }
 
