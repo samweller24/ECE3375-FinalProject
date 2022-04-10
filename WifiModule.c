@@ -6,7 +6,9 @@ Create a standardized message structure and display on the LCD (scrolling messag
 #include "address_map_arm.h"
 #include "string.h"
 #include <stdio.h>
+#include <time.h>
 #include <limits.h>
+#include <ctype.h>
 
 // Pointers to seven-segment display LEDs
 volatile int* lowerSeg = (int*) HEX3_HEX0_BASE;
@@ -31,9 +33,78 @@ struct WifiMessage {
     int timestamp;
 };
 
+/**
+ * @brief Displays array of 6 characters (hex-encoded) on the LCD displays
+ * 
+ * @param msg Array of 6 integer values
+ */
+void display(int msg[]) {
+    unsigned int lowerSegs = (msg[3] << 24) | (msg[2] << 16) | (msg[1] << 8) | msg[0];
+	unsigned int upperSegs = (msg[5] << 8) | msg[4];
+	*(lowerSeg) = lowerSegs;
+	*(upperSeg) = upperSegs;
+}
+
+/**
+ * @brief Delay progrma execution for a specified number of seconds
+ * 
+ * @param secs Length of delay in seconds
+ */
+void waitFor (unsigned int secs) {
+    unsigned int retTime = time(0) + secs;   // Get finishing time.
+    while (time(0) < retTime);               // Loop until it arrives.
+}
+
 // Helper function to display message
-void displayMsg(char msg[]) {
-    // TODO: Implement this
+void displayScrollingMsg(char msg[]) {
+    int displayQueue[] = {0, 0, 0, 0, 0, 0}; // To hold all current values displayed on LCD
+    int msgComplete = 0;
+    int blankDigits = 0;
+    int msgPtr = 0;
+    while(1) {
+        // If message has been written and all digits are blank, break the loop
+        if (blankDigits == 6) {
+            break;
+        }
+
+        if (!msgComplete) {
+            msgComplete = msgPtr == sizeof(msg);
+        }
+
+        // Shift all queue elements over by 1
+        displayQueue[5] = displayQueue[4];
+        displayQueue[4] = displayQueue[3];
+        displayQueue[3] = displayQueue[2];
+        displayQueue[2] = displayQueue[1];
+        displayQueue[1] = displayQueue[0];
+
+        if (msgComplete) {
+            displayQueue[0] = 0; // Display nothing
+            blankDigits++;
+        } else {
+            // Add next character from message
+            char next = msg[msgPtr++];
+            if (isdigit(next)) {
+                int nextInt = (int) next;
+                displayQueue[0] = num_hex[nextInt];
+            } else {
+                if (next == 'c') {
+                    displayQueue[0] = c_hex;
+                } else if (next == 'r') {
+                    displayQueue[0] = r_hex;
+                } else if (next == 'u') {
+                    displayQueue[0] = u_hex;
+                } else if (next == 't') {
+                    displayQueue[0] = t_hex;
+                }
+            }
+        }
+
+        display(displayQueue);
+
+        // Delay 1 second
+        waitFor(1);
+    }
 }
 
 /**
