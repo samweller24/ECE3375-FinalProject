@@ -46,7 +46,7 @@ int main(void) {
 
         //get wifi msg and simulate send (display)
         char* message = buildCharArray(msg);
-        displayScrollingMsg(message);
+        displayScrollingMsg(*message);
 
         //output LEDs
         //above threshold - green or 3rd LED
