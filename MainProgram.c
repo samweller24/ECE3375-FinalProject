@@ -11,38 +11,46 @@ int fillThreshold = 3;
 int fillMinimum = 1;
 int clientId = 0;
 int unitId = 0;
+int timeInterval = 3000000000;
 
+void initTimer(int timeInt){
+    *(timerPTR + 1) = 0b1000;
+	*(timerPTR + 2) = timeInt;
+	*(timerPTR + 3) = timeInt << 16;
+}
+
+void runTimer(){
+    *(timerPTR + 1) = 0b0100;
+    while(*(timerPTR) != 0b01) { }
+}
+
+WifiMessage buildWifiMessage(int read, time_t time){
+    //create wifi msg
+    WifiMessage msg;
+    //assign values
+    msg.clientId = clientId;
+    msg.unitId = unitId;
+    msg.reading = read;
+    msg.timestamp = time;
+
+    return msg;
+}
 
 int main(void) { 
-	*(timerPTR + 1) = 0b1000;
-	*(timerPTR + 2) = 0xCA00;
-	*(timerPTR + 3) = 0x3B9A;
-    //3B9ACA00 = 1000000000ns eqaul to 1s
+	initTimer(timeInterval);
 	
 	while(1) {		
+        //run timer
+        runTimer();
+
         //get data from potent function call
-        int currentRead = getData();
-
-        //run loop 30 times for 30 seconds
-        int i;
-        for(i = 0; i < 30; i++){
-            *(timerPTR + 1) = 0b0100;
-            while(*(timerPTR) != 0b01) { }
-            i++;
-        }
-
-        //create wifi msg
-        WifiMessage msg;
-
+        int currentRead = getData();    
         //get current time
         time_t currentTime;
         currentTime = time(NULL);
 
-        //assign values
-        msg.clientId = clientId;
-        msg.unitId = unitId;
-        msg.reading = currentRead;
-        msg.timestamp = currentTime;    
+        //create msg
+        WifiMessage msg = buildWifiMessage(currentRead, currentTime);
 
         //get wifi msg and simulate send (display)
         char* message = buildCharArray(msg);
