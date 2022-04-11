@@ -6,6 +6,7 @@ Create a standardized message structure and display on the LCD (scrolling messag
 #include "address_map_arm.h"
 #include "string.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 #include <limits.h>
 #include <ctype.h>
@@ -56,7 +57,7 @@ void waitFor (unsigned int secs) {
 }
 
 // Helper function to display message
-void displayScrollingMsg(char msg[]) {
+void displayScrollingMsg(char msg[], int size) {
     int displayQueue[] = {0, 0, 0, 0, 0, 0}; // To hold all current values displayed on LCD
     int msgComplete = 0;
     int blankDigits = 0;
@@ -68,7 +69,7 @@ void displayScrollingMsg(char msg[]) {
         }
 
         if (!msgComplete) {
-            msgComplete = msgPtr == sizeof(msg);
+            msgComplete = msgPtr == size;
         }
 
         // Shift all queue elements over by 1
@@ -84,9 +85,8 @@ void displayScrollingMsg(char msg[]) {
         } else {
             // Add next character from message
             char next = msg[msgPtr++];
-            if (isdigit(next)) {
-                int nextInt = (int) next;
-                displayQueue[0] = num_hex[nextInt];
+            if (next >= '0' && next <= '9') {
+                displayQueue[0] = num_hex[next - 48];
             } else {
                 if (next == 'c') {
                     displayQueue[0] = c_hex;
@@ -120,14 +120,24 @@ int numPlaces (int n) {
 }
 
 void pushDigitsToArray(char arr[], char num[], int offset) {
-    int numDigits = sizeof(num);
+    int numDigits = sizeof(&num);
     int placeIndex;
     for (placeIndex = offset; placeIndex < offset + numDigits; placeIndex++) {
         arr[placeIndex] = num[placeIndex - offset];
     }
 }
 
-const char* buildCharArray(WifiMessage msg) {
+int computeMessageLength(WifiMessage msg) {
+    int clientIdLength = numPlaces(msg.clientId);
+    int unitIdLength = numPlaces(msg.unitId);
+    int readingLength = numPlaces(msg.reading);
+    int timestampLength = numPlaces(msg.timestamp);
+    int numDigs = 3; // Start with 3 (one for each flag character)
+    numDigs = numDigs + clientIdLength + unitIdLength + readingLength + timestampLength;
+    return numDigs;
+}
+
+char* buildCharArray(WifiMessage msg) {
     int clientIdLength = numPlaces(msg.clientId);
     int unitIdLength = numPlaces(msg.unitId);
     int readingLength = numPlaces(msg.reading);
@@ -145,24 +155,24 @@ const char* buildCharArray(WifiMessage msg) {
 
     // Determine message size
     int numDigs = 3; // Start with 3 (one for each flag character)
-    numDigs = numDigs + clientIdLength + unitId + readingLength + timestampLength;
+    numDigs = numDigs + clientIdLength + unitIdLength + readingLength + timestampLength;
 
     // Build char array containing final message
-    char message[numDigs];
+    char* message = malloc(numDigs);
     int insertPtr = 0;
-    message[insertPtr] = "c";
+    message[insertPtr] = 'c';
     insertPtr += 1;
     pushDigitsToArray(message, clientId, insertPtr);
     insertPtr += clientIdLength;
-    message[insertPtr] = "u";
+    message[insertPtr] = 'u';
     insertPtr += 1;
     pushDigitsToArray(message, unitId, insertPtr);
     insertPtr += unitIdLength;
-    message[insertPtr] = "r";
+    message[insertPtr] = 'r';
     insertPtr += 1;
     pushDigitsToArray(message, reading, insertPtr);
     insertPtr += readingLength;
-    message[insertPtr] = "t";
+    message[insertPtr] = 't';
     insertPtr += 1;
     pushDigitsToArray(message, timestamp, insertPtr);
     
