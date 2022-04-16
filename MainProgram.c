@@ -7,16 +7,17 @@ volatile int* timerPTR = (int*)TIMER_BASE;
 volatile int* ledPTR = (int*)LED_BASE;
 
 //threshold to set fill level
-int fillThreshold = 3;
+int fillThreshold = 5;
 int fillMinimum = 1;
 int clientId = 0;
 int unitId = 0;
 int timeInterval = 3000000000;
+volatile int unitCount = 0;
 
 void initTimer(int timeInt){
     *(timerPTR + 1) = 0b1000;
-	*(timerPTR + 2) = timeInt;
-	*(timerPTR + 3) = timeInt << 16;
+*(timerPTR + 2) = timeInt;
+*(timerPTR + 3) = timeInt << 16;
 }
 
 void runTimer(){
@@ -24,33 +25,30 @@ void runTimer(){
     while(*(timerPTR) != 0b01) { }
 }
 
-WifiMessage buildWifiMessage(int read, time_t time){
+WifiMessage buildWifiMessage(int read){
     //create wifi msg
     WifiMessage msg;
     //assign values
     msg.clientId = clientId;
     msg.unitId = unitId;
     msg.reading = read;
-    msg.timestamp = time;
+    msg.timestamp = unitCount++;
 
     return msg;
 }
 
-int main(void) { 
-	initTimer(timeInterval);
-	
-	while(1) {		
+int main(void) {
+initTimer(timeInterval);
+
+while(1) {
         //run timer
         runTimer();
 
         //get data from potent function call
-        int currentRead = getData();    
-        //get current time
-        time_t currentTime;
-        currentTime = time(NULL);
+int currentRead = getData();
 
         //create msg
-        WifiMessage msg = buildWifiMessage(currentRead, currentTime);
+        WifiMessage msg = buildWifiMessage(currentRead);
 
         //get wifi msg and simulate send (display)
         char* message = buildCharArray(msg);
@@ -61,7 +59,7 @@ int main(void) {
         //above threshold - green or 3rd LED
         if(currentRead > fillThreshold){
             //trigger LED
-            *ledPTR = 0b001;
+            *ledPTR = 0b100;
         }
 
         //if under threshold and not zero
@@ -71,10 +69,10 @@ int main(void) {
         }
 
         //if below minimum value (emopty)
-        if(currentRead <= fillMinimum){
+        if(currentRead < fillMinimum){
             //trigger LED
-            *ledPTR = 0b100;
-        
+            *ledPTR = 0b001;
+       
         }
-	}
+}
 }
