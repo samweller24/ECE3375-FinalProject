@@ -1,7 +1,13 @@
-/*
-The Strategy:
-Create a standardized message structure and display on the LCD (scrolling message perhaps)
-*/
+/**
+ * @file WifiModule.c
+ * @author Samuel Weller, Andreas Mavroudis, Jayson Dale
+ * @brief Creates a WiFi message structure and simulates transmission by displaying it on a set of 7-segment displays
+ * @version 0.1
+ * @date 2022-04-12
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
 
 #include "address_map_arm.h"
 #include "string.h"
@@ -68,8 +74,9 @@ void displayScrollingMsg(char msg[], int size) {
             break;
         }
 
+        // Check to see if the entire message has been displayed yet
         if (!msgComplete) {
-            msgComplete = msgPtr == size;
+            msgComplete = msgPtr == size;   // Sets msgComplete to true if the msgPtr has reached the end of the message
         }
 
         // Shift all queue elements over by 1
@@ -79,6 +86,7 @@ void displayScrollingMsg(char msg[], int size) {
         displayQueue[2] = displayQueue[1];
         displayQueue[1] = displayQueue[0];
 
+        // If the entire message has been displayed, add blank characters
         if (msgComplete) {
             displayQueue[0] = 0; // Display nothing
             blankDigits++;
@@ -119,6 +127,13 @@ int numPlaces (int n) {
     return 1 + numPlaces (n / 10);
 }
 
+/**
+ * @brief Add digits of a number to an array of characters
+ * 
+ * @param arr Destination array
+ * @param num Array of digits to be added
+ * @param offset Starting index of the insert operation
+ */
 void pushDigitsToArray(char arr[], char num[], int offset) {
     int numDigits = sizeof(&num);
     int placeIndex;
@@ -127,6 +142,12 @@ void pushDigitsToArray(char arr[], char num[], int offset) {
     }
 }
 
+/**
+ * @brief Determine the number of characters in a WiFi message object
+ * 
+ * @param msg WiFiMessage object reference
+ * @return int Number of characters in the WiFi message
+ */
 int computeMessageLength(WifiMessage msg) {
     int clientIdLength = numPlaces(msg.clientId);
     int unitIdLength = numPlaces(msg.unitId);
@@ -137,27 +158,36 @@ int computeMessageLength(WifiMessage msg) {
     return numDigs;
 }
 
+/**
+ * @brief Construct an array of characters based on a WiFiMessage object reference
+ * 
+ * @param msg Target WiFiMessage object
+ * @return char* Array of characters to be transmitted
+ */
 char* buildCharArray(WifiMessage msg) {
+    // Get the length of each component
     int clientIdLength = numPlaces(msg.clientId);
     int unitIdLength = numPlaces(msg.unitId);
     int readingLength = numPlaces(msg.reading);
     int timestampLength = numPlaces(msg.timestamp);
 
+    // Initialize character arrays for each message component
     char clientId[clientIdLength];
     char unitId[unitIdLength];
     char reading[readingLength];
     char timestamp[timestampLength];
 
+    // Add digits of each WiFiMessage component to their corresponding character arrays
     sprintf(clientId, "%d", msg.clientId);
     sprintf(unitId, "%d", msg.unitId);
     sprintf(reading, "%d", msg.reading);
     sprintf(timestamp, "%d", msg.timestamp);
 
-    // Determine message size
-    int numDigs = 3; // Start with 3 (one for each flag character)
+    // Determine the message size
+    int numDigs = 4;
     numDigs = numDigs + clientIdLength + unitIdLength + readingLength + timestampLength;
 
-    // Build char array containing final message
+    // Build character array containing final message
     char* message = malloc(numDigs);
     int insertPtr = 0;
     message[insertPtr] = 'c';
